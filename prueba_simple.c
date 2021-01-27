@@ -37,12 +37,14 @@ int main(int argc, char *argv[]) {
 
   /* create the thread 1*/
   pthread_create(&tid1, &attr, resta, NULL);
-
   /* create the thread 2*/
   pthread_create(&tid2, &attr, suma, NULL);
 	
   /* espera a los hilos */
   pthread_join(tid1, NULL);
+  
+  printf("dato = %d\n", dato);
+
   pthread_join(tid2, NULL);
   
   printf("dato = %d\n", dato);
@@ -51,21 +53,21 @@ int main(int argc, char *argv[]) {
  * Este hilo resta
  */
 void* resta() {
-  int t=0;
-  for (int i = 0; i <= 1000; i++) { // Haz cosas
-    t++;
+  int t = dato;
+  for (int i = 0; i <= 100; i++) { // Haz cosas
+    t--;
   }
-  dato -= t/10;
+  dato = t;
   pthread_exit(0);
 }
 /**
  * Este hilo suma
  */
 void* suma() {
-  int t=0;
-  for (int i = 0; i <= 500; i++) { // Haz cosas
+  int t = dato;
+  for (int i = 0; i <= 50; i++) { // Haz cosas
     t++;
   }
-  dato += t/10;
+  dato = t;
   pthread_exit(0);
 }
