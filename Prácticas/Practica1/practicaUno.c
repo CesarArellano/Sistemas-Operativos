@@ -12,6 +12,7 @@
 #include <time.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <sys/sysinfo.h>
 
 // Definiendo estructura de Ordenamiento
 typedef struct SortArguments{
@@ -42,6 +43,9 @@ void* criba(void *sortArguments);
 // Función para imprimir resultado del arreglo.
 void print(int arrayNumbers[], int length);
 
+// Función que obtiene los hilos de nuestra máquina
+int getAvailableThreads();
+
 // Variable global, para el semáforo de la criba
 sem_t mutex;
 
@@ -49,8 +53,7 @@ int main() {
   clock_t clockStart, clockStop;
   double finalTime;
   int *arraySort;
-  int option, numElements, numThreads; // Número hasta el que se quiere buscar.
-  int validThreads; // con esta variable validaremos el número de hilos que puede ingresar el usuario.
+  int option, numElements, numThreads, availableThreads;
   
   do {
     system("clear");
@@ -85,11 +88,14 @@ int main() {
         printf("Criba.\n");
         printf("¿Cuántos elementos quieres buscar?\n");
         scanf(" %d", &numElements);
-        printf("¿Cuántos hilos quieres usar? (Menor al número de elementos)\n");
+        availableThreads = getAvailableThreads(); // Obtener los hilos en Intel.
+        if(availableThreads == 0) {
+          availableThreads = get_nprocs(); // obtener hilos en AMD.
+        }
+        printf("¿Cuántos hilos quieres usar? (Máximo %d)\n", availableThreads);
         scanf(" %d", &numThreads);
-        validThreads = (numElements / 2) - 1;
-        if((numThreads > numElements) || (validThreads < numThreads)) {
-          printf("Error, el número de hilos supera los elementos a buscar\n");
+        if( numThreads > numElements || numThreads > availableThreads ) {
+          printf("Error, el número de hilos no soportado\n");
         } else {
           clockStart = clock();
           cribaThreads(numElements, numThreads);
@@ -116,6 +122,23 @@ int main() {
   return 0;
 }
 
+// Función para obtener los hilos del CPU para procesadores Intel.
+int getAvailableThreads() {
+
+	unsigned  int	eax=11,ebx=0,ecx=1,edx=0;
+	asm
+	volatile
+	( " cpuid "
+	:  "=a"  ( eax ) ,
+	"=b"  ( ebx ) ,
+	"=c"  ( ecx ) ,
+	"=d"  ( edx )
+	:  "0"  ( eax ) ,  "2"  ( ecx )
+	:  ) ;	
+	return ebx;
+	
+}
+// Función que genera los hilos del método sort.
 void sortThreads(int arrayNumbers[], int length) {
   pthread_t tid1, tid2; // Identificadores de hilos
   pthread_attr_t attr;
@@ -261,7 +284,7 @@ void* criba(void* args){
       arguments->resultNumbers[ *arguments->x] = i;
       printf("El número %d es primo.\n", i);
       for (p = 2; (p * i) <= *arguments->totalNumbers; p++){
-          arguments->nums[(p * i)] = 1;
+        arguments->nums[(p * i)] = 1;
       }
       *arguments->x = *arguments->x + 1;
 
@@ -274,7 +297,7 @@ void* criba(void* args){
 // Imprimimos el resultado del array.
 void print(int arrayNumbers[], int length) {
   for(int i = 0; i < length; i++) {
-        printf("%d ", arrayNumbers[i]);
+    printf("%d ", arrayNumbers[i]);
   }
   printf("\n");
 }
